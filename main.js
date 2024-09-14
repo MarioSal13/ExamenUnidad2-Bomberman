@@ -70,7 +70,10 @@ class entidad {
 }
 
 var link = new entidad(200, 200, 50, 60, 1.5);
-var muros = new entidad(0,0,100,100);
+
+var muros = [];
+var murosCentrales=[];
+
 var direction = "";
 var frameIndex = 0; 
 var frameDelay = 0; 
@@ -109,6 +112,34 @@ function update() {
     } else if (direction == "izquierda") {
         link.x -= link.s;
     }
+
+    muros.forEach(muros => {
+        if(link.colision(muros)){
+            if (direction == "arriba") {
+                link.y += link.s;
+            } else if (direction == "derecha") {
+                link.x -= link.s;
+            } else if (direction == "abajo") {
+                link.y -= link.s;
+            } else if (direction == "izquierda") {
+                link.x += link.s;
+            }
+        }
+    });
+
+    murosCentrales.forEach(murosCentrales => {
+        if(link.colision(murosCentrales)){
+            if (direction == "arriba") {
+                link.y += link.s;
+            } else if (direction == "derecha") {
+                link.x -= link.s;
+            } else if (direction == "abajo") {
+                link.y -= link.s;
+            } else if (direction == "izquierda") {
+                link.x += link.s;
+            }
+        }
+    });
 }
 
 function pintar() {
@@ -117,16 +148,41 @@ function pintar() {
     // Dibuja los muros
     for (let i = 0; i <= 15; i++) {
         // lados Arriba y abajo
-        ctx.drawImage(pared, i * 100, 0, muros.w, muros.h);
-        ctx.drawImage(pared, i * 100, 845, muros.w, muros.h);
+        ctx.drawImage(pared, i * 100, 0, 100, 100);
+        muros.push(new entidad(i * 100, 0, 80, 80));
+
+        ctx.drawImage(pared, i * 100, 845, 100, 100);
+        muros.push(new entidad(i * 100, 845, 80, 80));
     }
 
    
     for (let i = 0; i <= 12; i++) { 
          //lados <-  -> 
-        ctx.drawImage(pared, 1400, i * 70, muros.w, muros.h); 
-        ctx.drawImage(pared, 0, i * 70, muros.w, muros.h);
+        ctx.drawImage(pared, 1400, i * 70, 100, 100); 
+        muros.push(new entidad(1400, i * 70, 80, 80));
+        ctx.drawImage(pared, 0, i * 70, 100, 100);
+        muros.push(new entidad(0, i * 70, 80, 80));
     }
+
+    for (let i = 1; i <= 6; i++) {
+        ctx.drawImage(pared,i*200,140,100, 100); 
+        murosCentrales.push(new entidad((i*200)+20,140,70, 60));
+
+        ctx.drawImage(pared,i*200,280,100, 100); 
+        murosCentrales.push(new entidad((i*200)+20,280,70, 60));
+
+        ctx.drawImage(pared,i*200,420,100, 100); 
+        murosCentrales.push(new entidad((i*200)+20,420,70, 60));
+
+        ctx.drawImage(pared,i*200,560,100, 100); 
+        murosCentrales.push(new entidad((i*200)+20,560,70, 60));
+
+        ctx.drawImage(pared,i*200,700,100, 100); 
+        murosCentrales.push(new entidad((i*200)+20,700,70, 60));
+    }
+
+    
+
 
     if (direction == "abajo") {
         if (frameDelay % 5 === 0) { 
