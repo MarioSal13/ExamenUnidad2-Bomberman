@@ -5,13 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>bomberMan</title>
     <style>
+        body{
+            display: flex;
+            justify-content: center; 
+            align-items: center;    
+            height: 100vh;  
+        }
         canvas{
             background-color: green;
         }
 
     </style>
 </head>
-<body>
+<body id="body">
 
     <audio id="backgroundMusic" src="sounds/overWorld.mp3"></audio>
     <audio id="ruiaSong" src="sounds\getRupi.mp3"></audio>
@@ -56,6 +62,7 @@
     <img id="LinkArribaM10" src="images/caminar arriba 10.png" style="display:none;">
     <img id="LinkArribaM11" src="images/caminar arriba 11.png" style="display:none;">
 
+    <img id="bloque" src="images/muro.png" style="display:none;">
     <canvas id="Canvas"></canvas>
     <script src="main.js"></script>
     

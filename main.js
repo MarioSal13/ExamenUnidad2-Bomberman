@@ -1,11 +1,12 @@
 const canvas = document.querySelector('canvas');
 
-canvas.width = 800;
-canvas.height = 600;
+canvas.width = 1500;
+canvas.height = 900;
 const ctx = canvas.getContext('2d');
 
 const LinkQuieto = document.getElementById('linkQuietoFrente');
 const linkMueAbaj = document.getElementById('linkCorreAba');
+const pared = document.getElementById('bloque');
 
 const moveDown = [
     document.getElementById('linkAbajoM1'),
@@ -69,6 +70,7 @@ class entidad {
 }
 
 var link = new entidad(200, 200, 50, 60, 1.5);
+var muros = new entidad(0,0,100,100);
 var direction = "";
 var frameIndex = 0; 
 var frameDelay = 0; 
@@ -87,6 +89,8 @@ document.addEventListener("keydown", function(e) {
         direction = "derecha";
         console.log(direction);
     }
+
+
 });
 
 document.addEventListener("keyup", function(e) {
@@ -109,6 +113,20 @@ function update() {
 
 function pintar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Dibuja los muros
+    for (let i = 0; i <= 15; i++) {
+        // lados Arriba y abajo
+        ctx.drawImage(pared, i * 100, 0, muros.w, muros.h);
+        ctx.drawImage(pared, i * 100, 845, muros.w, muros.h);
+    }
+
+   
+    for (let i = 0; i <= 12; i++) { 
+         //lados <-  -> 
+        ctx.drawImage(pared, 1400, i * 70, muros.w, muros.h); 
+        ctx.drawImage(pared, 0, i * 70, muros.w, muros.h);
+    }
 
     if (direction == "abajo") {
         if (frameDelay % 5 === 0) { 
