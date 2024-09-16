@@ -51,8 +51,30 @@ const moveUp = [
 ];
 
 const bomb = [
-    document.getElementById('bomba-1')
+    document.getElementById('bomba-1'),
+    document.getElementById('bomba-2'),
+    document.getElementById('bomba-3')
+];
 
+const bombExplisionCentro = [
+    document.getElementById('bomba-exc-1'),
+    document.getElementById('bomba-exc-2'),
+    document.getElementById('bomba-exc-3'),
+    document.getElementById('bomba-exc-4')
+];
+
+const bombExplisionMedio = [
+    document.getElementById('bomba-exl-1'),
+    document.getElementById('bomba-exl-2'),
+    document.getElementById('bomba-exl-3'),
+    document.getElementById('bomba-exl-4')
+];
+
+const bombExplisionFin = [
+    document.getElementById('bomba-exf-1'),
+    document.getElementById('bomba-exf-2'),
+    document.getElementById('bomba-exf-3'),
+    document.getElementById('bomba-exf-4')
 ];
 
 class entidad {
@@ -75,7 +97,7 @@ class entidad {
     }
 }
 
-var link = new entidad(200, 200, 40, 50, 1.5);
+var link = new entidad(150, 150, 40, 50, 1.5);
 
 var bomaPosicion = [];
 var muros = [];
@@ -84,8 +106,19 @@ var explosion = [];
 
 var direction = "";
 var bombas = false;
+
 var frameIndex = 0; 
 var frameDelay = 0; 
+
+var bombFrameIndex = 0; 
+var bombFrameDelay = 0; 
+
+const bombFrameRate = 20; 
+
+const bombaTiempoExplo = 5000;
+
+
+
 
 document.addEventListener("keydown", function(e) {
     if (e.key == "w") {
@@ -109,8 +142,10 @@ document.addEventListener("keydown", function(e) {
 
 document.addEventListener("keyup", function(e) {
     direction = "";
+
     frameDelay = 0;
-    frameIndex = 0; 
+    frameIndex = 0;
+   
 });
 
 function update() {
@@ -123,7 +158,7 @@ function update() {
     } else if (direction == "izquierda") {
         link.x -= link.s;
     }else if (bombas == true) {
-        bomaPosicion.push({x:link.x+10, y:link.y+10});
+        bomaPosicion.push({x:link.x+10, y:link.y+10, tiempoBomba: Date.now()});
         bombas=false;
     }
 
@@ -160,12 +195,29 @@ function pintar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     //decoraciones 
 
-    mapa();
     move();
+    mapa();
+    
+    const tiempoActul = Date.now();
 
-    bomaPosicion.forEach(bombPos => {
-        ctx.drawImage(bomb[0], bombPos.x, bombPos.y, 35, 35);
+    bomaPosicion.forEach((bombPos, index) => {
+        const correTiempo = tiempoActul - bombPos.tiempoBomba;
+
+        if (correTiempo > bombaTiempoExplo) {
+            // Mostrar animación de explosión inicial
+            bomaPosicion.splice(index, 1);
+            
+        } else {
+            // Mostrar la animación de la bomba
+            if (bombFrameDelay % bombFrameRate === 0) {
+                bombFrameIndex = (bombFrameIndex + 1) % bomb.length;
+            }
+
+            ctx.drawImage(bomb[bombFrameIndex], bombPos.x, bombPos.y, 35, 35);
+            bombFrameDelay++;
+        }
     });
+
 
     update();
     requestAnimationFrame(pintar);
@@ -214,46 +266,44 @@ function move() {
 }
 
 function mapa(){  
- //para no llenar tanto la memoria vacio los arreglos antes
- muros= [];
- murosCentrales = [];                  
+    //para no llenar tanto la memoria vacio los arreglos antes
+    muros= [];
+    murosCentrales = [];                  
 
+    // Dibuja los muros
+    for (let i = 0; i <= 15; i++) {
+        // lados Arriba y abajo
+        ctx.drawImage(pared, i * 100, 0, 100, 100);
+        muros.push(new entidad(i * 100, 20, 80, 80));
 
- // Dibuja los muros
- for (let i = 0; i <= 15; i++) {
-     // lados Arriba y abajo
-     ctx.drawImage(pared, i * 100, 0, 100, 100);
-     muros.push(new entidad(i * 100, 0, 80, 80));
+        ctx.drawImage(pared, i * 100, 845, 100, 100);
+        muros.push(new entidad(i * 100, 865, 100, 100));
+    }
 
-     ctx.drawImage(pared, i * 100, 845, 100, 100);
-     muros.push(new entidad(i * 100, 845, 80, 80));
- }
+    for (let i = 0; i <= 12; i++) { 
+        //lados <-  -> 
+        ctx.drawImage(pared, 1400, i * 70, 100, 100); 
+        muros.push(new entidad(1400, i * 70, 100, 100));
+        ctx.drawImage(pared, 0, i * 70, 100, 100);
+        muros.push(new entidad(0, i * 70, 100, 100));
+    }
 
+    for (let i = 1; i <= 6; i++) {
+        ctx.drawImage(pared,i*200,140,100, 100); 
+        murosCentrales.push(new entidad((i*200)+5,170,90, 70));
 
- for (let i = 0; i <= 12; i++) { 
-      //lados <-  -> 
-     ctx.drawImage(pared, 1400, i * 70, 100, 100); 
-     muros.push(new entidad(1400, i * 70, 80, 80));
-     ctx.drawImage(pared, 0, i * 70, 100, 100);
-     muros.push(new entidad(0, i * 70, 80, 80));
- }
+        ctx.drawImage(pared,i*200,280,100, 100);
+        murosCentrales.push(new entidad((i*200)+5,310,90, 70));
 
- for (let i = 1; i <= 6; i++) {
-     ctx.drawImage(pared,i*200,140,100, 100); 
-     murosCentrales.push(new entidad((i*200)+20,140,70, 60));
+        ctx.drawImage(pared,i*200,420,100, 100); 
+        murosCentrales.push(new entidad((i*200)+5,450,90, 70));
 
-     ctx.drawImage(pared,i*200,280,100, 100); 
-     murosCentrales.push(new entidad((i*200)+20,280,70, 60));
+        ctx.drawImage(pared,i*200,560,100, 100); 
+        murosCentrales.push(new entidad((i*200)+5,590,90, 70));
 
-     ctx.drawImage(pared,i*200,420,100, 100); 
-     murosCentrales.push(new entidad((i*200)+20,420,70, 60));
-
-     ctx.drawImage(pared,i*200,560,100, 100); 
-     murosCentrales.push(new entidad((i*200)+20,560,70, 60));
-
-     ctx.drawImage(pared,i*200,700,100, 100); 
-     murosCentrales.push(new entidad((i*200)+20,700,70, 60));
- }
+        ctx.drawImage(pared,i*200,700,100, 100); 
+        murosCentrales.push(new entidad((i*200)+5,730,90, 70));
+    }
 }
 
 function generarObstaculos(){
