@@ -7,6 +7,7 @@ const ctx = canvas.getContext('2d');
 const LinkQuieto = document.getElementById('linkQuietoFrente');
 const linkMueAbaj = document.getElementById('linkCorreAba');
 const pared = document.getElementById('bloque');
+const bloqueDestruido = document.getElementById('muroD');
 
 
 const moveDown = [
@@ -101,12 +102,15 @@ var link = new entidad(150, 150, 40, 50, 1.5);
 
 var bomaPosicion = [];
 var muros = [];
-var murosCentrales=[];
+var murosCentrales= [];
 var explosion = [];
+var explosiones = [];
+var obstaculosDestruibles = [];
 
 var direction = "";
 var bombas = false;
 var bombaActiva = false;
+var dibujados = false;
 
 var frameIndex = 0; 
 var frameDelay = 0; 
@@ -195,19 +199,51 @@ function update() {
             }
         }
     });
+
+    obstaculosDestruibles.forEach(obstaculosDestruibles => {
+        if(link.colision(obstaculosDestruibles)){
+            if (direction == "arriba") {
+                link.y += link.s;
+            } else if (direction == "derecha") {
+                link.x -= link.s;
+            } else if (direction == "abajo") {
+                link.y -= link.s;
+            } else if (direction == "izquierda") {
+                link.x += link.s;
+            }
+        }
+    });
+
+
+    obstaculosDestruibles.forEach((obstaculo, index) => {
+        explosiones.forEach((exp) => {
+            if (obstaculo.colision(exp)) {
+                obstaculosDestruibles.splice(index, 1); 
+            }
+        });
+    });
+
+    // Limpiar explosiones que ya han terminado
+    explosion.forEach((exp, index) => {
+        if (exp.explosionCompleteTime !== null && Date.now() - exp.explosionCompleteTime > explosionDuration) {
+            explosion.splice(index, 1);
+        }
+    });
+
+
+
+
 }
+
+generarObstaculos();
 
 function pintar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     //decoraciones 
-
     move();
-    mapa();
-    
-   
-    
+    dibujarObstaculos();
     explotar();
-
+    mapa();
 
     update();
     requestAnimationFrame(pintar);
@@ -296,116 +332,183 @@ function mapa(){
     }
 }
 
-function explotar(){
-    const tiempoActul = Date.now();
+// Ajustar el tamaño del área de colisión para la explosión
+function explotar() {
+    const tiempoActual = Date.now();
 
     bomaPosicion.forEach((bombPos, index) => {
-        const correTiempo = tiempoActul - bombPos.tiempoBomba;
-    
+        const correTiempo = tiempoActual - bombPos.tiempoBomba;
+
         if (correTiempo > bombaTiempoExplo) {
+            explosiones = [];
             // Agregar la explosión al arreglo de explosiones si no existe ya
             if (!explosion.some(expl => expl.x === bombPos.x && expl.y === bombPos.y)) {
                 explosion.push({
                     x: bombPos.x,
                     y: bombPos.y,
+                    w: 40,  // Define el ancho del área de colisión
+                    h: 40,  // Define la altura del área de colisión
                     frameIndex: 0,
                     frameDelay: 0,
                     explosionCompleteTime: null
                 });
             }
-    
+
             // Dibujar y manejar la explosión
             explosion.forEach((expl, explIndex) => {
                 // Controlar la animación de la explosión
                 if (expl.frameDelay % 5 === 0 && expl.frameIndex < bombExplisionCentro.length - 1) {
                     expl.frameIndex++;
                 }
-    
+
                 // Dibujar la explosión central
-                ctx.drawImage(bombExplisionCentro[Math.min(expl.frameIndex, bombExplisionCentro.length - 1)],expl.x,expl.y,40,40);
-    
+                ctx.drawImage(bombExplisionCentro[Math.min(expl.frameIndex, bombExplisionCentro.length - 1)], expl.x, expl.y, expl.w, expl.h);
+                
+                for (let i = 1; i <= 3; i++) {
+                    explosiones.push(new entidad(expl.x - i * 35, expl.y, 40, 40)); // Izquierda
+                    explosiones.push(new entidad(expl.x + i * 35, expl.y, 40, 40)); // Derecha
+                    explosiones.push(new entidad(expl.x, expl.y - i * 35, 40, 40)); // Arriba
+                    explosiones.push(new entidad(expl.x, expl.y + i * 35, 40, 40)); // Abajo
+                }
+
                 // Dibujar explosiones en cada dirección (arriba, abajo, izquierda, derecha)
                 for (let i = 1; i <= 3; i++) {
                     // Izquierda
-                    ctx.save(); 
-                    ctx.translate(expl.x - i * 35 + 20, expl.y + 20); 
-                    ctx.rotate(-Math.PI / 2); 
-                    ctx.drawImage(bombExplisionMedio[Math.min(expl.frameIndex, bombExplisionMedio.length - 1)],-20,-20,40,40);
+                    let explIzqX = expl.x - i * 35 + 20;
+                    ctx.save();
+                    ctx.translate(explIzqX, expl.y + 20);
+                    ctx.rotate(-Math.PI / 2);
+                    ctx.drawImage(bombExplisionMedio[Math.min(expl.frameIndex, bombExplisionMedio.length - 1)], -20, -20, expl.w, expl.h);
                     ctx.restore();
-    
+
                     // Derecha
-                    ctx.save(); 
-                    ctx.translate(expl.x + i * 35 + 20, expl.y + 20); 
-                    ctx.rotate(Math.PI / 2); 
-                    ctx.drawImage(bombExplisionMedio[Math.min(expl.frameIndex, bombExplisionMedio.length - 1)],-20,-20,40,40);
+                    let explDerX = expl.x + i * 35 + 20;
+                    ctx.save();
+                    ctx.translate(explDerX, expl.y + 20);
+                    ctx.rotate(Math.PI / 2);
+                    ctx.drawImage(bombExplisionMedio[Math.min(expl.frameIndex, bombExplisionMedio.length - 1)], -20, -20, expl.w, expl.h);
                     ctx.restore();
-    
+                
                     // Arriba
-                    ctx.drawImage(
-                        bombExplisionMedio[Math.min(expl.frameIndex, bombExplisionMedio.length - 1)],expl.x,expl.y - i * 35,40, 40);
-                    
+                    let explArrY = expl.y - i * 35;
+                    ctx.drawImage(bombExplisionMedio[Math.min(expl.frameIndex, bombExplisionMedio.length - 1)], expl.x, explArrY, expl.w, expl.h);
+                   
+
                     // Abajo
-                    ctx.drawImage(bombExplisionMedio[Math.min(expl.frameIndex, bombExplisionMedio.length - 1)],expl.x,expl.y + i * 35,40,40);
+                    let explAbaY = expl.y + i * 35;
+                    ctx.drawImage(bombExplisionMedio[Math.min(expl.frameIndex, bombExplisionMedio.length - 1)], expl.x, explAbaY, expl.w, expl.h);
+                  
                 }
-    
-                // Dibujar las partes finales de la explosión
-                // Izquierda final
+
+                // Dibujar los extremos de la explosión
                 ctx.save();
                 ctx.translate(expl.x - 4 * 35 + 20, expl.y + 20);
-                ctx.rotate(-Math.PI / 1);
-                ctx.drawImage(bombExplisionFin[Math.min(expl.frameIndex, bombExplisionFin.length - 1)],-20,-20,40,40);
+                ctx.rotate(-Math.PI);
+                ctx.drawImage(bombExplisionFin[Math.min(expl.frameIndex, bombExplisionFin.length - 1)], -20, -20, expl.w, expl.h);
                 ctx.restore();
-    
-                // Derecha final
-                ctx.drawImage(bombExplisionFin[Math.min(expl.frameIndex, bombExplisionFin.length - 1)],expl.x + 4 * 35,expl.y,40,40);
-    
-                // Arriba final
+               
+
+                ctx.drawImage(bombExplisionFin[Math.min(expl.frameIndex, bombExplisionFin.length - 1)], expl.x + 4 * 35, expl.y, expl.w, expl.h);
+
                 ctx.save();
                 ctx.translate(expl.x, expl.y - 4 * 35);
                 ctx.rotate(-Math.PI / 2);
-                ctx.drawImage(bombExplisionFin[Math.min(expl.frameIndex, bombExplisionFin.length - 1)],-40,0,40,40);
+                ctx.drawImage(bombExplisionFin[Math.min(expl.frameIndex, bombExplisionFin.length - 1)], -40, 0, expl.w, expl.h);
                 ctx.restore();
-    
-                // Abajo final
+                
+
                 ctx.save();
                 ctx.translate(expl.x + 20, expl.y + 4 * 35);
-                ctx.rotate(Math.PI / 2); 
-                ctx.drawImage(bombExplisionFin[Math.min(expl.frameIndex, bombExplisionFin.length - 1)], 0, -20, 40,40);
+                ctx.rotate(Math.PI / 2);
+                ctx.drawImage(bombExplisionFin[Math.min(expl.frameIndex, bombExplisionFin.length - 1)], 0, -20, expl.w, expl.h);
                 ctx.restore();
-    
+                
+
                 expl.frameDelay++;
-    
-                // Registrar el tiempo de finalización de la explosión
+
                 if (expl.frameIndex >= bombExplisionCentro.length - 1 && expl.explosionCompleteTime === null) {
-                    expl.explosionCompleteTime = tiempoActul;
+                    expl.explosionCompleteTime = tiempoActual;
                 }
-    
-                // Mantener la animación hasta que termine explosionDuration
-                if (expl.explosionCompleteTime !== null && tiempoActul - expl.explosionCompleteTime > explosionDuration) {
+
+                if (expl.explosionCompleteTime !== null && tiempoActual - expl.explosionCompleteTime > explosionDuration) {
                     explosion.splice(explIndex, 1);
                 }
             });
-    
-            // Eliminar la bomba después de que todas las explosiones hayan terminado
+
             if (explosion.every(expl => expl.x !== bombPos.x || expl.y !== bombPos.y)) {
                 bomaPosicion.splice(index, 1);
             }
-    
+
         } else {
-            // Mostrar la animación de la bomba
             if (bombFrameDelay % bombFrameRate === 0) {
                 bombFrameIndex = (bombFrameIndex + 1) % bomb.length;
                 bombaActiva = false;
             }
-    
+
             ctx.drawImage(bomb[bombFrameIndex], bombPos.x, bombPos.y, 35, 35);
             bombFrameDelay++;
         }
     });
 }
 
-function generarObstaculos(){
 
+
+
+function generarObstaculos() {
+    obstaculosDestruibles = [];
+    var f = 200;
+    for (let i = 0; i < 14; i++) {
+        obstaculosDestruibles.push(new entidad(f+=100, 90, 100, 80));
+    }
+
+    var f = 100;
+    for (let i = 0; i < 14; i++) {
+        obstaculosDestruibles.push(new entidad((f+=100)+100, 160, 100, 80));
+    }
+
+    for (let i = 0; i < 14; i++) {
+        obstaculosDestruibles.push(new entidad(i*100, 230, 100, 80));
+    }
+
+    for (let i = 0; i < 14; i++) {
+        obstaculosDestruibles.push(new entidad((i*100)+100, 300, 100, 80));
+    }
+    
+    for (let i = 0; i < 14; i++) {
+        obstaculosDestruibles.push(new entidad(i*100, 370, 100, 80));
+    }
+
+    for (let i = 0; i < 14; i++) {
+        obstaculosDestruibles.push(new entidad((i*100)+100, 440, 100, 80));
+    }
+
+    for (let i = 0; i < 14; i++) {
+        obstaculosDestruibles.push(new entidad(i*100, 510, 100, 80));
+    }
+
+    for (let i = 0; i < 14; i++) {
+        obstaculosDestruibles.push(new entidad((i*100)+100, 580, 100, 80));
+    }
+
+    for (let i = 0; i < 14; i++) {
+        obstaculosDestruibles.push(new entidad(i*100, 650, 100, 80));
+    }
+
+    for (let i = 0; i < 14; i++) {
+        obstaculosDestruibles.push(new entidad((i*100)+100, 720, 100, 80));
+    }
+
+    for (let i = 0; i < 14; i++) {
+        obstaculosDestruibles.push(new entidad(i*100, 790, 100, 80));
+    }
+
+
+}
+
+function dibujarObstaculos() {
+    obstaculosDestruibles.forEach(obstaculo => {
+        ctx.drawImage(bloqueDestruido, obstaculo.x, obstaculo.y, obstaculo.w, obstaculo.h);
+    });
 }
 
 
