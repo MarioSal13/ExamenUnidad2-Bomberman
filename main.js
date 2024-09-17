@@ -8,6 +8,7 @@ const LinkQuieto = document.getElementById('linkQuietoFrente');
 const linkMueAbaj = document.getElementById('linkCorreAba');
 const pared = document.getElementById('bloque');
 const bloqueDestruido = document.getElementById('muroD');
+const trifuerza = document.getElementById('tri')
 
 
 const moveDown = [
@@ -99,6 +100,12 @@ class entidad {
 }
 
 var link = new entidad(150, 150, 40, 50, 1.5);
+var triforce =  new entidad (750,500, 70,70);
+
+var titulo = new sound("sounds/titulo.mp3");
+var game = new sound("sounds/overWorld.mp3");
+var ponerBomb = new sound("sounds/poner.mp3");
+var explo = new sound("sounds/explota.mp3");
 
 var bomaPosicion = [];
 var muros = [];
@@ -123,9 +130,10 @@ const bombFrameRate = 20;
 const bombaTiempoExplo = 2000;
 const explosionDuration = 50;
 
+var gameStart = false;
+var encontrada = false;
 
-
-
+var startTime = null;
 
 document.addEventListener("keydown", function(e) {
     if (e.key == "w") {
@@ -142,6 +150,11 @@ document.addEventListener("keydown", function(e) {
         
     } else if (e.key == "e") {
        bombas = true;
+    }else if (e.key == "f") {
+        if (!gameStart) { 
+            gameStart = true;
+            startTime = Date.now(); 
+        }
     }
 
 
@@ -167,6 +180,7 @@ function update() {
     }else if (bombas == true) {
         if (bomaPosicion.length === 0) {
             bomaPosicion.push({x:link.x+10, y:link.y+10, tiempoBomba: Date.now()});
+            ponerBomb.play();
             bombas = false; 
         }
         
@@ -223,14 +237,17 @@ function update() {
         });
     });
 
-    // Limpiar explosiones que ya han terminado
+    
     explosion.forEach((exp, index) => {
         if (exp.explosionCompleteTime !== null && Date.now() - exp.explosionCompleteTime > explosionDuration) {
             explosion.splice(index, 1);
         }
     });
 
-
+    if(link.colision(triforce)){
+        console.log("si la encontro");
+        encontrada = true;
+    }
 
 
 }
@@ -239,14 +256,43 @@ generarObstaculos();
 
 function pintar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    //decoraciones 
-    move();
-    dibujarObstaculos();
-    explotar();
-    mapa();
 
-    update();
+    if(gameStart == false){
+        titulo.play();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'white';
+        ctx.font = '48px Arial';
+        ctx.textAlign = 'center';
+    
+        ctx.fillText('Presione F para empezar ', canvas.width / 2, canvas.height / 2 );
+        ctx.fillText('Movimeitno: w,a,s,d   bomba: e', canvas.width / 2, canvas.height / 2  + 100);
+
+    }else{
+        titulo.stop();
+        game.play();
+        
+        if(encontrada==true){
+
+        }
+        
+        move();
+        dibujarObstaculos();
+        dibujarTrifuerza();
+        explotar();
+        mapa();
+
+        const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+
+        ctx.fillStyle = 'black';
+        ctx.font = '30px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText('Tiempo: ' + elapsedTime + 's', 10, 30);
+
+        update();
+    }
+
     requestAnimationFrame(pintar);
+    
 }
 
 pintar();
@@ -332,7 +378,6 @@ function mapa(){
     }
 }
 
-// Ajustar el tamaño del área de colisión para la explosión
 function explotar() {
     const tiempoActual = Date.now();
 
@@ -341,7 +386,7 @@ function explotar() {
 
         if (correTiempo > bombaTiempoExplo) {
             explosiones = [];
-            // Agregar la explosión al arreglo de explosiones si no existe ya
+           explo.play();
             if (!explosion.some(expl => expl.x === bombPos.x && expl.y === bombPos.y)) {
                 explosion.push({
                     x: bombPos.x,
@@ -451,9 +496,6 @@ function explotar() {
     });
 }
 
-
-
-
 function generarObstaculos() {
     obstaculosDestruibles = [];
     var f = 200;
@@ -511,6 +553,28 @@ function dibujarObstaculos() {
     });
 }
 
+function dibujarTrifuerza() {
+    ctx.drawImage(trifuerza,triforce.x,triforce.y,triforce.w,triforce.h);
+}
+
+function sound(src) {
+    this.sound = document.createElement("audio");
+    this.sound.src = src;
+    this.sound.setAttribute("preload", "auto");
+    this.sound.setAttribute("controls", "none");
+    this.sound.style.display = "none";
+    document.body.appendChild(this.sound);
+
+    this.play = function() {
+        this.sound.play().catch(error => {
+            console.error("Error playing sound:", error);
+        });
+    }
+
+    this.stop = function() {
+        this.sound.pause();
+    }
+}
 
 
 
