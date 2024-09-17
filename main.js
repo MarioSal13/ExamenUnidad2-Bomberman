@@ -106,6 +106,7 @@ var explosion = [];
 
 var direction = "";
 var bombas = false;
+var bombaActiva = false;
 
 var frameIndex = 0; 
 var frameDelay = 0; 
@@ -115,7 +116,9 @@ var bombFrameDelay = 0;
 
 const bombFrameRate = 20; 
 
-const bombaTiempoExplo = 5000;
+const bombaTiempoExplo = 2000;
+const explosionDuration = 50;
+
 
 
 
@@ -158,8 +161,11 @@ function update() {
     } else if (direction == "izquierda") {
         link.x -= link.s;
     }else if (bombas == true) {
-        bomaPosicion.push({x:link.x+10, y:link.y+10, tiempoBomba: Date.now()});
-        bombas=false;
+        if (bomaPosicion.length === 0) {
+            bomaPosicion.push({x:link.x+10, y:link.y+10, tiempoBomba: Date.now()});
+            bombas = false; 
+        }
+        
     }
 
     muros.forEach(muros => {
@@ -198,25 +204,9 @@ function pintar() {
     move();
     mapa();
     
-    const tiempoActul = Date.now();
-
-    bomaPosicion.forEach((bombPos, index) => {
-        const correTiempo = tiempoActul - bombPos.tiempoBomba;
-
-        if (correTiempo > bombaTiempoExplo) {
-            // Mostrar animación de explosión inicial
-            bomaPosicion.splice(index, 1);
-            
-        } else {
-            // Mostrar la animación de la bomba
-            if (bombFrameDelay % bombFrameRate === 0) {
-                bombFrameIndex = (bombFrameIndex + 1) % bomb.length;
-            }
-
-            ctx.drawImage(bomb[bombFrameIndex], bombPos.x, bombPos.y, 35, 35);
-            bombFrameDelay++;
-        }
-    });
+   
+    
+    explotar();
 
 
     update();
@@ -304,6 +294,114 @@ function mapa(){
         ctx.drawImage(pared,i*200,700,100, 100); 
         murosCentrales.push(new entidad((i*200)+5,730,90, 70));
     }
+}
+
+function explotar(){
+    const tiempoActul = Date.now();
+
+    bomaPosicion.forEach((bombPos, index) => {
+        const correTiempo = tiempoActul - bombPos.tiempoBomba;
+    
+        if (correTiempo > bombaTiempoExplo) {
+            // Agregar la explosión al arreglo de explosiones si no existe ya
+            if (!explosion.some(expl => expl.x === bombPos.x && expl.y === bombPos.y)) {
+                explosion.push({
+                    x: bombPos.x,
+                    y: bombPos.y,
+                    frameIndex: 0,
+                    frameDelay: 0,
+                    explosionCompleteTime: null
+                });
+            }
+    
+            // Dibujar y manejar la explosión
+            explosion.forEach((expl, explIndex) => {
+                // Controlar la animación de la explosión
+                if (expl.frameDelay % 5 === 0 && expl.frameIndex < bombExplisionCentro.length - 1) {
+                    expl.frameIndex++;
+                }
+    
+                // Dibujar la explosión central
+                ctx.drawImage(bombExplisionCentro[Math.min(expl.frameIndex, bombExplisionCentro.length - 1)],expl.x,expl.y,40,40);
+    
+                // Dibujar explosiones en cada dirección (arriba, abajo, izquierda, derecha)
+                for (let i = 1; i <= 3; i++) {
+                    // Izquierda
+                    ctx.save(); 
+                    ctx.translate(expl.x - i * 35 + 20, expl.y + 20); 
+                    ctx.rotate(-Math.PI / 2); 
+                    ctx.drawImage(bombExplisionMedio[Math.min(expl.frameIndex, bombExplisionMedio.length - 1)],-20,-20,40,40);
+                    ctx.restore();
+    
+                    // Derecha
+                    ctx.save(); 
+                    ctx.translate(expl.x + i * 35 + 20, expl.y + 20); 
+                    ctx.rotate(Math.PI / 2); 
+                    ctx.drawImage(bombExplisionMedio[Math.min(expl.frameIndex, bombExplisionMedio.length - 1)],-20,-20,40,40);
+                    ctx.restore();
+    
+                    // Arriba
+                    ctx.drawImage(
+                        bombExplisionMedio[Math.min(expl.frameIndex, bombExplisionMedio.length - 1)],expl.x,expl.y - i * 35,40, 40);
+                    
+                    // Abajo
+                    ctx.drawImage(bombExplisionMedio[Math.min(expl.frameIndex, bombExplisionMedio.length - 1)],expl.x,expl.y + i * 35,40,40);
+                }
+    
+                // Dibujar las partes finales de la explosión
+                // Izquierda final
+                ctx.save();
+                ctx.translate(expl.x - 4 * 35 + 20, expl.y + 20);
+                ctx.rotate(-Math.PI / 1);
+                ctx.drawImage(bombExplisionFin[Math.min(expl.frameIndex, bombExplisionFin.length - 1)],-20,-20,40,40);
+                ctx.restore();
+    
+                // Derecha final
+                ctx.drawImage(bombExplisionFin[Math.min(expl.frameIndex, bombExplisionFin.length - 1)],expl.x + 4 * 35,expl.y,40,40);
+    
+                // Arriba final
+                ctx.save();
+                ctx.translate(expl.x, expl.y - 4 * 35);
+                ctx.rotate(-Math.PI / 2);
+                ctx.drawImage(bombExplisionFin[Math.min(expl.frameIndex, bombExplisionFin.length - 1)],-40,0,40,40);
+                ctx.restore();
+    
+                // Abajo final
+                ctx.save();
+                ctx.translate(expl.x + 20, expl.y + 4 * 35);
+                ctx.rotate(Math.PI / 2); 
+                ctx.drawImage(bombExplisionFin[Math.min(expl.frameIndex, bombExplisionFin.length - 1)], 0, -20, 40,40);
+                ctx.restore();
+    
+                expl.frameDelay++;
+    
+                // Registrar el tiempo de finalización de la explosión
+                if (expl.frameIndex >= bombExplisionCentro.length - 1 && expl.explosionCompleteTime === null) {
+                    expl.explosionCompleteTime = tiempoActul;
+                }
+    
+                // Mantener la animación hasta que termine explosionDuration
+                if (expl.explosionCompleteTime !== null && tiempoActul - expl.explosionCompleteTime > explosionDuration) {
+                    explosion.splice(explIndex, 1);
+                }
+            });
+    
+            // Eliminar la bomba después de que todas las explosiones hayan terminado
+            if (explosion.every(expl => expl.x !== bombPos.x || expl.y !== bombPos.y)) {
+                bomaPosicion.splice(index, 1);
+            }
+    
+        } else {
+            // Mostrar la animación de la bomba
+            if (bombFrameDelay % bombFrameRate === 0) {
+                bombFrameIndex = (bombFrameIndex + 1) % bomb.length;
+                bombaActiva = false;
+            }
+    
+            ctx.drawImage(bomb[bombFrameIndex], bombPos.x, bombPos.y, 35, 35);
+            bombFrameDelay++;
+        }
+    });
 }
 
 function generarObstaculos(){
