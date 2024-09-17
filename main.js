@@ -106,6 +106,7 @@ var titulo = new sound("sounds/titulo.mp3");
 var game = new sound("sounds/overWorld.mp3");
 var ponerBomb = new sound("sounds/poner.mp3");
 var explo = new sound("sounds/explota.mp3");
+var triEncontrada = new sound ("sounds/obtener.mp3");
 
 var bomaPosicion = [];
 var muros = [];
@@ -151,10 +152,11 @@ document.addEventListener("keydown", function(e) {
     } else if (e.key == "e") {
        bombas = true;
     }else if (e.key == "f") {
-        if (!gameStart) { 
+        if (gameStart==false) { 
             gameStart = true;
             startTime = Date.now(); 
         }
+
     }
 
 
@@ -245,15 +247,12 @@ function update() {
     });
 
     if(link.colision(triforce)){
-        console.log("si la encontro");
         encontrada = true;
     }
-
 
 }
 
 generarObstaculos();
-
 function pintar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -264,20 +263,21 @@ function pintar() {
         ctx.font = '48px Arial';
         ctx.textAlign = 'center';
     
-        ctx.fillText('Presione F para empezar ', canvas.width / 2, canvas.height / 2 );
-        ctx.fillText('Movimeitno: w,a,s,d   bomba: e', canvas.width / 2, canvas.height / 2  + 100);
+        ctx.fillText('Presione F para empezar', canvas.width / 2, canvas.height / 2 );
+        ctx.fillText('Movimeinto: w,a,s,d  Colocar Bomba: E', canvas.width / 2, canvas.height / 2  + 100);
+        ctx.fillText('objetivo: encontrar la trifuerza escondida en los bloques', canvas.width / 2, canvas.height / 2  + 200);
+
+    }else if(encontrada==true){
+        mostrarVictoria();
+
 
     }else{
         titulo.stop();
         game.play();
         
-        if(encontrada==true){
-
-        }
-        
         move();
-        dibujarObstaculos();
         dibujarTrifuerza();
+        dibujarObstaculos();
         explotar();
         mapa();
 
@@ -288,9 +288,10 @@ function pintar() {
         ctx.textAlign = 'left';
         ctx.fillText('Tiempo: ' + elapsedTime + 's', 10, 30);
 
-        update();
+        
     }
 
+    update();
     requestAnimationFrame(pintar);
     
 }
@@ -391,8 +392,8 @@ function explotar() {
                 explosion.push({
                     x: bombPos.x,
                     y: bombPos.y,
-                    w: 40,  // Define el ancho del área de colisión
-                    h: 40,  // Define la altura del área de colisión
+                    w: 40,  
+                    h: 40,  
                     frameIndex: 0,
                     frameDelay: 0,
                     explosionCompleteTime: null
@@ -401,7 +402,6 @@ function explotar() {
 
             // Dibujar y manejar la explosión
             explosion.forEach((expl, explIndex) => {
-                // Controlar la animación de la explosión
                 if (expl.frameDelay % 5 === 0 && expl.frameIndex < bombExplisionCentro.length - 1) {
                     expl.frameIndex++;
                 }
@@ -410,10 +410,10 @@ function explotar() {
                 ctx.drawImage(bombExplisionCentro[Math.min(expl.frameIndex, bombExplisionCentro.length - 1)], expl.x, expl.y, expl.w, expl.h);
                 
                 for (let i = 1; i <= 3; i++) {
-                    explosiones.push(new entidad(expl.x - i * 35, expl.y, 40, 40)); // Izquierda
-                    explosiones.push(new entidad(expl.x + i * 35, expl.y, 40, 40)); // Derecha
-                    explosiones.push(new entidad(expl.x, expl.y - i * 35, 40, 40)); // Arriba
-                    explosiones.push(new entidad(expl.x, expl.y + i * 35, 40, 40)); // Abajo
+                    explosiones.push(new entidad(expl.x - i * 35, expl.y, 40, 40)); 
+                    explosiones.push(new entidad(expl.x + i * 35, expl.y, 40, 40)); 
+                    explosiones.push(new entidad(expl.x, expl.y - i * 35, 40, 40)); 
+                    explosiones.push(new entidad(expl.x, expl.y + i * 35, 40, 40)); 
                 }
 
                 // Dibujar explosiones en cada dirección (arriba, abajo, izquierda, derecha)
@@ -566,15 +566,30 @@ function sound(src) {
     document.body.appendChild(this.sound);
 
     this.play = function() {
-        this.sound.play().catch(error => {
-            console.error("Error playing sound:", error);
-        });
+        this.sound.play();
     }
 
     this.stop = function() {
         this.sound.pause();
     }
 }
+
+function mostrarVictoria() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    triEncontrada.play(); 
+    game.stop();  
+    
+    ctx.fillStyle = 'white';
+    ctx.font = '48px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('¡Ganaste!', canvas.width / 2, canvas.height / 2);
+    
+    ctx.font = '24px Arial';
+    ctx.fillText('Presiona F5 para volver al título', canvas.width / 2, canvas.height / 2 + 60);
+}
+
+
+
 
 
 
